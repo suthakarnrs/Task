@@ -1,0 +1,16 @@
+Transaction ID,Amount,Reference Number,Date,Description,Category
+TXN001,1500.00,REF001,2024-01-15,Payment for services,Services
+TXN002,2300.50,REF002,2024-01-16,Product purchase,Products
+TXN003,750.25,REF003,2024-01-17,Subscription fee,Subscriptions
+TXN004,1200.00,REF004,2024-01-18,Consulting services,Services
+TXN005,890.75,REF005,2024-01-19,Software license,Software
+TXN006,3400.00,REF006,2024-01-20,Equipment purchase,Equipment
+TXN007,567.30,REF007,2024-01-21,Monthly subscription,Subscriptions
+TXN008,1800.00,REF008,2024-01-22,Training services,Services
+TXN009,2100.50,REF009,2024-01-23,Product bundle,Products
+TXN010,450.00,REF010,2024-01-24,Support services,Services
+TXN011,1500.00,REF011,2024-01-25,Duplicate transaction,Services
+TXN001,1500.00,REF001,2024-01-15,Duplicate of TXN001,Services
+TXN012,2250.75,REF012,2024-01-26,Large purchase,Products
+TXN013,680.40,REF013,2024-01-27,Monthly fee,Subscriptions
+TXN014,1950.00,REF014,2024-01-28,Professional services,Services
