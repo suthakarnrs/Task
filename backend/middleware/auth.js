@@ -43,7 +43,7 @@ const authorize = (...roles) => {
 
 const auditMiddleware = (action, entityType) => {
   return async (req, res, next) => {
-    // Store audit info in request for later use
+    
     req.auditInfo = {
       action,
       entityType,

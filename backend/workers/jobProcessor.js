@@ -3,7 +3,6 @@ const fileProcessor = require('../services/fileProcessor');
 const reconciliationService = require('../services/reconciliationService');
 const UploadJob = require('../models/UploadJob');
 
-// File processing job handler
 fileProcessingQueue.process('process-file', async (job) => {
   const { jobId } = job.data;
   
@@ -12,7 +11,6 @@ fileProcessingQueue.process('process-file', async (job) => {
     
     const result = await fileProcessor.processFile(jobId);
     
-    // If processing successful, trigger reconciliation
     if (result.success && result.processedRecords > 0) {
       const uploadJob = await UploadJob.findOne({ jobId });
       await reconciliationQueue.add('reconcile-records', {
@@ -30,7 +28,6 @@ fileProcessingQueue.process('process-file', async (job) => {
   }
 });
 
-// Reconciliation job handler
 reconciliationQueue.process('reconcile-records', async (job) => {
   const { uploadJobId, userId } = job.data;
   
@@ -48,7 +45,6 @@ reconciliationQueue.process('reconcile-records', async (job) => {
   }
 });
 
-// Job event handlers
 fileProcessingQueue.on('completed', (job, result) => {
   console.log(`File processing job ${job.id} completed:`, result);
 });
@@ -65,7 +61,6 @@ reconciliationQueue.on('failed', (job, err) => {
   console.error(`Reconciliation job ${job.id} failed:`, err.message);
 });
 
-// Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('Shutting down job processors...');
   await fileProcessingQueue.close();

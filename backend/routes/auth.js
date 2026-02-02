@@ -7,7 +7,6 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Validation schemas
 const registerSchema = Joi.object({
   username: Joi.string().min(3).max(50).required(),
   email: Joi.string().email().required(),
@@ -20,14 +19,12 @@ const loginSchema = Joi.object({
   password: Joi.string().required()
 });
 
-// Generate JWT token
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
 };
 
-// Register user
 router.post('/register', async (req, res) => {
   try {
     const { error, value } = registerSchema.validate(req.body);
@@ -37,7 +34,6 @@ router.post('/register', async (req, res) => {
 
     const { username, email, password, role } = value;
 
-    // Check if user already exists
     const existingUser = await User.findOne({
       $or: [{ email }, { username }]
     });
@@ -48,11 +44,9 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Create user
     const user = new User({ username, email, password, role });
     await user.save();
 
-    // Create audit log
     await AuditLog.create({
       entityType: 'user',
       entityId: user._id,
@@ -87,19 +81,16 @@ router.post('/login', async (req, res) => {
 
     const { email, password } = value;
 
-    // Find user
     const user = await User.findOne({ email });
     if (!user || !user.isActive) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update last login
     user.lastLogin = new Date();
     await user.save();
 
@@ -116,12 +107,10 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get current user
 router.get('/me', authenticate, async (req, res) => {
   res.json({ user: req.user });
 });
 
-// Refresh token
 router.post('/refresh', authenticate, async (req, res) => {
   try {
     const token = generateToken(req.user._id);

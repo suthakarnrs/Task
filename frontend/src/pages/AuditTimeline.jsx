@@ -69,7 +69,6 @@ export default function AuditTimeline() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center space-x-4">
         <Link
           to="/reconciliation"
@@ -86,7 +85,6 @@ export default function AuditTimeline() {
         </div>
       </div>
 
-      {/* Timeline */}
       <div className="card p-6">
         {timelineData.length === 0 ? (
           <div className="text-center py-12">
@@ -128,7 +126,6 @@ export default function AuditTimeline() {
                               <span className="font-medium">{entityType.replace('_', ' ')}</span>
                             </p>
                             
-                            {/* Changes */}
                             {event.changes && event.changes.length > 0 && (
                               <div className="mt-2 space-y-1">
                                 {event.changes.map((change, idx) => (
@@ -154,7 +151,6 @@ export default function AuditTimeline() {
                               </div>
                             )}
 
-                            {/* New Value (for creates) */}
                             {event.action === 'create' && event.newValue && (
                               <div className="mt-2 text-xs bg-green-50 rounded p-2">
                                 <div className="font-medium text-gray-700 mb-1">Created with:</div>
@@ -164,7 +160,6 @@ export default function AuditTimeline() {
                               </div>
                             )}
 
-                            {/* Source and metadata */}
                             <div className="mt-2 flex items-center space-x-4 text-xs text-gray-500">
                               <span className="flex items-center">
                                 <UserCircleIcon className="h-3 w-3 mr-1" />
@@ -194,7 +189,6 @@ export default function AuditTimeline() {
         )}
       </div>
 
-      {/* Entity Details */}
       <div className="card p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Entity Information</h3>
         <dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">

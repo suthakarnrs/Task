@@ -1,6 +1,6 @@
 # Smart Reconciliation & Audit System
 
-A full-stack MERN application for transaction reconciliation with comprehensive audit trails.
+A full-stack MERN application for transaction reconciliation
 
 ## Architecture Overview
 

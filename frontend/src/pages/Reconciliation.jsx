@@ -42,11 +42,9 @@ export default function Reconciliation() {
   const { hasPermission } = useAuth()
   const queryClient = useQueryClient()
 
-  // Get reconciliation results
   const { data: results, isLoading } = useQuery(
     ['reconciliation-results', filters],
     () => {
-      // Filter out empty values to avoid validation errors
       const cleanFilters = Object.fromEntries(
         Object.entries(filters).filter(([key, value]) => value !== '' && value !== null && value !== undefined)
       )
@@ -55,13 +53,11 @@ export default function Reconciliation() {
     { keepPreviousData: true }
   )
 
-  // Get upload jobs for filter dropdown
   const { data: uploadJobs } = useQuery(
     ['upload-jobs'],
     () => uploadAPI.getJobs({ limit: 100 })
   )
 
-  // Manual resolution mutation
   const resolveMutation = useMutation(
     ({ id, resolution }) => reconciliationAPI.resolveManually(id, resolution),
     {
@@ -120,7 +116,6 @@ export default function Reconciliation() {
         <h1 className="text-2xl font-bold text-gray-900">Reconciliation Results</h1>
       </div>
 
-      {/* Filters */}
       <div className="card p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
@@ -169,7 +164,6 @@ export default function Reconciliation() {
         </div>
       </div>
 
-      {/* Results Table */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -246,7 +240,6 @@ export default function Reconciliation() {
           </table>
         </div>
 
-        {/* Pagination */}
         {pagination.pages > 1 && (
           <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
             <div className="flex-1 flex justify-between sm:hidden">
@@ -314,7 +307,6 @@ export default function Reconciliation() {
         )}
       </div>
 
-      {/* Resolve Modal */}
       {showResolveModal && selectedResult && (
         <ResolveModal
           result={selectedResult}
@@ -332,7 +324,6 @@ export default function Reconciliation() {
   )
 }
 
-// Resolve Modal Component
 function ResolveModal({ result, onClose, onResolve, isLoading }) {
   const [resolution, setResolution] = useState({
     matchStatus: result.matchStatus,

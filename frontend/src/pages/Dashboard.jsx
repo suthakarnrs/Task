@@ -90,13 +90,12 @@ export default function Dashboard() {
       color: COLORS.duplicate,
       key: 'duplicate'
     },
-  ].filter(item => item.value > 0) // Only show items with values
+  ].filter(item => item.value > 0) 
 
   const totalReconciliationRecords = reconciliationData.reduce((sum, item) => sum + item.value, 0)
 
-  // Custom label function for pie chart
   const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value, name }) => {
-    if (percent < 0.05) return null // Don't show labels for very small slices
+    if (percent < 0.05) return null 
     
     const RADIAN = Math.PI / 180
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5
@@ -118,7 +117,6 @@ export default function Dashboard() {
     )
   }
 
-  // Custom tooltip for pie chart
   const renderTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0]
@@ -145,12 +143,10 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          {/* Refresh Button */}
           <button
             onClick={() => {
               queryClient.invalidateQueries(['dashboard-summary'])
@@ -165,7 +161,6 @@ export default function Dashboard() {
             Refresh
           </button>
           
-          {/* Date Range Filter */}
           <div className="flex items-center space-x-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">From</label>
@@ -189,7 +184,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="card p-6 hover:shadow-lg transition-shadow">
           <div className="flex items-center">
@@ -284,9 +278,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Reconciliation Status Chart */}
         <div className="card p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-medium text-gray-900">Reconciliation Status</h3>
@@ -299,7 +291,6 @@ export default function Dashboard() {
           
           {reconciliationData.length > 0 ? (
             <div className="space-y-4">
-              {/* Pie Chart */}
               <div className="flex justify-center">
                 <ResponsiveContainer width="100%" height={280}>
                   <PieChart>
@@ -325,7 +316,6 @@ export default function Dashboard() {
                 </ResponsiveContainer>
               </div>
               
-              {/* Custom Legend */}
               <div className="grid grid-cols-2 gap-3">
                 {reconciliationData.map((item) => (
                   <div key={item.key} className="flex items-center space-x-2">
@@ -354,7 +344,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Accuracy Trends */}
         <div className="card p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-medium text-gray-900">Accuracy Trends</h3>
@@ -411,7 +400,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Activity */}
       <div className="card">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>

@@ -51,7 +51,7 @@ const reconciliationResultSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for performance
+
 reconciliationResultSchema.index({ uploadedRecordId: 1 });
 reconciliationResultSchema.index({ systemRecordId: 1 });
 reconciliationResultSchema.index({ uploadJobId: 1 });

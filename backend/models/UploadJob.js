@@ -63,7 +63,6 @@ const uploadJobSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for performance
 uploadJobSchema.index({ jobId: 1 });
 uploadJobSchema.index({ uploadedBy: 1 });
 uploadJobSchema.index({ status: 1 });

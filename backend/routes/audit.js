@@ -6,7 +6,6 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Validation schemas
 const auditFilterSchema = Joi.object({
   entityType: Joi.string().valid('record', 'reconciliation_result', 'upload_job', 'user'),
   entityId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/),
@@ -18,10 +17,9 @@ const auditFilterSchema = Joi.object({
   limit: Joi.number().integer().min(1).max(100).default(20)
 });
 
-// Get audit logs with filters
 router.get('/logs',
   authenticate,
-  authorize('admin', 'analyst'), // Only admin and analyst can view audit logs
+  authorize('admin', 'analyst'), 
   async (req, res) => {
     try {
       const { error, value } = auditFilterSchema.validate(req.query);
@@ -32,7 +30,7 @@ router.get('/logs',
       const { entityType, entityId, action, userId, dateFrom, dateTo, page, limit } = value;
       const skip = (page - 1) * limit;
 
-      // Build query
+      
       let query = {};
       
       if (entityType) query.entityType = entityType;
@@ -73,14 +71,12 @@ router.get('/logs',
   }
 );
 
-// Get audit timeline for a specific entity
 router.get('/timeline/:entityType/:entityId',
   authenticate,
   async (req, res) => {
     try {
       const { entityType, entityId } = req.params;
 
-      // Validate entity type
       const validEntityTypes = ['record', 'reconciliation_result', 'upload_job', 'user'];
       if (!validEntityTypes.includes(entityType)) {
         return res.status(400).json({ message: 'Invalid entity type' });
@@ -90,9 +86,7 @@ router.get('/timeline/:entityType/:entityId',
         return res.status(400).json({ message: 'Invalid entity ID' });
       }
 
-      // Role-based access control
       if (req.user.role === 'viewer') {
-        // Viewers can only see audit logs for their own uploads
         if (entityType === 'upload_job') {
           const UploadJob = require('../models/UploadJob');
           const uploadJob = await UploadJob.findById(entityId);
@@ -109,10 +103,9 @@ router.get('/timeline/:entityType/:entityId',
         entityId
       })
         .populate('userId', 'username email')
-        .sort({ createdAt: 1 }) // Chronological order for timeline
+        .sort({ createdAt: 1 }) 
         .lean();
 
-      // Format timeline for frontend
       const formattedTimeline = timeline.map(log => ({
         id: log._id,
         timestamp: log.createdAt,
@@ -138,7 +131,6 @@ router.get('/timeline/:entityType/:entityId',
   }
 );
 
-// Get audit statistics
 router.get('/stats',
   authenticate,
   authorize('admin'),
@@ -178,7 +170,6 @@ router.get('/stats',
         }
       ]);
 
-      // Get user activity stats
       const userActivity = await AuditLog.aggregate([
         { $match: matchQuery },
         {
@@ -211,7 +202,6 @@ router.get('/stats',
         { $limit: 10 }
       ]);
 
-      // Get daily activity
       const dailyActivity = await AuditLog.aggregate([
         { $match: matchQuery },
         {
@@ -242,7 +232,6 @@ router.get('/stats',
   }
 );
 
-// Export audit logs (CSV format)
 router.get('/export',
   authenticate,
   authorize('admin'),
@@ -264,7 +253,6 @@ router.get('/export',
         .sort({ createdAt: -1 })
         .lean();
 
-      // Convert to CSV format
       const csvHeaders = [
         'Timestamp',
         'Entity Type',

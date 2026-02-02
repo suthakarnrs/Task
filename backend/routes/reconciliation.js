@@ -9,7 +9,6 @@ const { authenticate, authorize, auditMiddleware } = require('../middleware/auth
 
 const router = express.Router();
 
-// Validation schemas
 const manualResolutionSchema = Joi.object({
   matchStatus: Joi.string().valid('matched', 'partially_matched', 'not_matched').required(),
   systemRecordId: Joi.string().pattern(/^[0-9a-fA-F]{24}$/),
@@ -25,7 +24,6 @@ const filterSchema = Joi.object({
   limit: Joi.number().integer().min(1).max(100).default(20)
 });
 
-// Get reconciliation results with filters
 router.get('/results',
   authenticate,
   async (req, res) => {
@@ -38,7 +36,6 @@ router.get('/results',
       const { uploadJobId, matchStatus, dateFrom, dateTo, page, limit } = value;
       const skip = (page - 1) * limit;
 
-      // Build query
       let query = {};
       
       if (uploadJobId) {
@@ -55,7 +52,6 @@ router.get('/results',
         if (dateTo) query.createdAt.$lte = dateTo;
       }
 
-      // Role-based filtering
       if (req.user.role === 'viewer') {
         const userUploadJobs = await UploadJob.find({ uploadedBy: req.user._id }).select('_id');
         const jobIds = userUploadJobs.map(job => job._id);
@@ -105,7 +101,6 @@ router.get('/results',
   }
 );
 
-// Get reconciliation result by ID
 router.get('/results/:id',
   authenticate,
   async (req, res) => {
@@ -140,7 +135,6 @@ router.get('/results/:id',
         return res.status(404).json({ message: 'Reconciliation result not found' });
       }
 
-      // Check authorization
       if (req.user.role === 'viewer' && 
           result.uploadJobId.uploadedBy._id.toString() !== req.user._id.toString()) {
         return res.status(403).json({ message: 'Access denied' });
@@ -155,7 +149,6 @@ router.get('/results/:id',
   }
 );
 
-// Manual resolution of reconciliation result
 router.put('/results/:id/resolve',
   authenticate,
   authorize('admin', 'analyst'),
@@ -173,7 +166,6 @@ router.put('/results/:id/resolve',
         return res.status(400).json({ message: 'Invalid reconciliation result ID' });
       }
 
-      // Validate system record if provided
       if (value.systemRecordId) {
         const systemRecord = await Record.findOne({
           _id: value.systemRecordId,
@@ -206,7 +198,6 @@ router.put('/results/:id/resolve',
   }
 );
 
-// Get reconciliation statistics for an upload job
 router.get('/stats/:uploadJobId',
   authenticate,
   async (req, res) => {
@@ -217,13 +208,11 @@ router.get('/stats/:uploadJobId',
         return res.status(400).json({ message: 'Invalid upload job ID' });
       }
 
-      // Check if upload job exists and user has access
       const uploadJob = await UploadJob.findById(uploadJobId);
       if (!uploadJob) {
         return res.status(404).json({ message: 'Upload job not found' });
       }
 
-      // Check authorization
       if (req.user.role === 'viewer' && 
           uploadJob.uploadedBy.toString() !== req.user._id.toString()) {
         return res.status(403).json({ message: 'Access denied' });
@@ -240,7 +229,6 @@ router.get('/stats/:uploadJobId',
   }
 );
 
-// Get potential system matches for manual reconciliation
 router.get('/matches/:recordId',
   authenticate,
   authorize('admin', 'analyst'),
@@ -261,7 +249,6 @@ router.get('/matches/:recordId',
       let matches = [];
 
       if (search) {
-        // Search system records by transaction ID or reference number
         matches = await Record.find({
           isSystemRecord: true,
           $or: [
@@ -270,18 +257,15 @@ router.get('/matches/:recordId',
           ]
         }).limit(10);
       } else {
-        // Find potential matches using reconciliation service
         matches = await reconciliationService.findSystemMatches(uploadedRecord);
       }
 
-      // Calculate match scores
       const matchesWithScores = matches.map(systemRecord => ({
         ...systemRecord.toObject(),
         matchScore: reconciliationService.calculateMatchScore(uploadedRecord, systemRecord),
         differences: reconciliationService.findDifferences(uploadedRecord, systemRecord)
       }));
 
-      // Sort by match score
       matchesWithScores.sort((a, b) => b.matchScore - a.matchScore);
 
       res.json({
@@ -296,7 +280,6 @@ router.get('/matches/:recordId',
   }
 );
 
-// Trigger reconciliation for an upload job manually
 router.post('/trigger/:uploadJobId',
   authenticate,
   authorize('admin', 'analyst'),
@@ -309,24 +292,20 @@ router.post('/trigger/:uploadJobId',
         return res.status(400).json({ message: 'Invalid upload job ID' });
       }
 
-      // Check if upload job exists and user has access
       const uploadJob = await UploadJob.findById(uploadJobId);
       if (!uploadJob) {
         return res.status(404).json({ message: 'Upload job not found' });
       }
 
-      // Check authorization
       if (req.user.role === 'viewer' && 
           uploadJob.uploadedBy.toString() !== req.user._id.toString()) {
         return res.status(403).json({ message: 'Access denied' });
       }
 
-      // Check if upload job is completed
       if (uploadJob.status !== 'completed') {
         return res.status(400).json({ message: 'Upload job must be completed before reconciliation' });
       }
 
-      // Trigger reconciliation
       const result = await reconciliationService.reconcileUploadJob(uploadJobId, req.user._id);
 
       res.json({

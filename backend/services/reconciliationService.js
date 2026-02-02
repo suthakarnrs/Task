@@ -12,12 +12,10 @@ class ReconciliationService {
     };
   }
 
-  // Calculate match score between two records
   calculateMatchScore(uploadedRecord, systemRecord) {
     let score = 0;
     let totalFields = 0;
 
-    // Exact match fields
     this.reconciliationRules.exactMatchFields.forEach(field => {
       totalFields++;
       if (field === 'amount') {
@@ -35,18 +33,16 @@ class ReconciliationService {
       }
     });
 
-    // Partial match fields
     this.reconciliationRules.partialMatchFields.forEach(field => {
       totalFields++;
       if (uploadedRecord[field] === systemRecord[field]) {
-        score += 0.8; // Partial match gets lower weight
+        score += 0.8; 
       }
     });
 
     return totalFields > 0 ? score / totalFields : 0;
   }
 
-  // Find differences between records
   findDifferences(uploadedRecord, systemRecord) {
     const differences = [];
     const fieldsToCompare = ['transactionId', 'amount', 'referenceNumber', 'date', 'description'];
@@ -62,7 +58,6 @@ class ReconciliationService {
           systemValue
         };
 
-        // Calculate variance for numeric fields
         if (field === 'amount' && typeof uploadedValue === 'number' && typeof systemValue === 'number') {
           const variance = Math.abs(uploadedValue - systemValue) / Math.max(uploadedValue, systemValue);
           diff.variance = variance;
@@ -75,7 +70,6 @@ class ReconciliationService {
     return differences;
   }
 
-  // Determine match status based on score and differences
   determineMatchStatus(score, differences, duplicateCount) {
     if (duplicateCount > 1) {
       return 'duplicate';
@@ -90,11 +84,9 @@ class ReconciliationService {
     }
   }
 
-  // Find potential system matches for an uploaded record
   async findSystemMatches(uploadedRecord) {
     const matches = [];
 
-    // Try exact match first (Transaction ID + Amount)
     const exactMatches = await Record.find({
       transactionId: uploadedRecord.transactionId,
       amount: uploadedRecord.amount,
@@ -103,7 +95,6 @@ class ReconciliationService {
 
     matches.push(...exactMatches);
 
-    // If no exact match, try partial match (Reference Number with amount tolerance)
     if (matches.length === 0) {
       const amountMin = uploadedRecord.amount * (1 - this.tolerance);
       const amountMax = uploadedRecord.amount * (1 + this.tolerance);
@@ -120,7 +111,6 @@ class ReconciliationService {
     return matches;
   }
 
-  // Check for duplicates in uploaded records
   async findDuplicates(uploadJobId) {
     const duplicates = await Record.aggregate([
       { $match: { uploadJobId, isSystemRecord: false } },
@@ -137,10 +127,8 @@ class ReconciliationService {
     return duplicates;
   }
 
-  // Reconcile records for an upload job
   async reconcileUploadJob(uploadJobId, userId) {
     try {
-      // Get all uploaded records for this job
       const uploadedRecords = await Record.find({ 
         uploadJobId, 
         isSystemRecord: false 
@@ -150,25 +138,21 @@ class ReconciliationService {
         throw new Error('No uploaded records found for reconciliation');
       }
 
-      // Find duplicates first
       const duplicates = await this.findDuplicates(uploadJobId);
       const duplicateTransactionIds = new Set(duplicates.map(d => d._id));
 
       const reconciliationResults = [];
 
-      // Process each uploaded record
       for (const uploadedRecord of uploadedRecords) {
         const duplicateCount = duplicateTransactionIds.has(uploadedRecord.transactionId) 
           ? duplicates.find(d => d._id === uploadedRecord.transactionId)?.count || 1
           : 1;
 
-        // Find potential system matches
         const systemMatches = await this.findSystemMatches(uploadedRecord);
         
         let bestMatch = null;
         let bestScore = 0;
 
-        // Find the best matching system record
         for (const systemRecord of systemMatches) {
           const score = this.calculateMatchScore(uploadedRecord, systemRecord);
           if (score > bestScore) {
@@ -177,7 +161,6 @@ class ReconciliationService {
           }
         }
 
-        // Create reconciliation result
         const differences = bestMatch 
           ? this.findDifferences(uploadedRecord, bestMatch)
           : [];
@@ -197,7 +180,6 @@ class ReconciliationService {
         await reconciliationResult.save();
         reconciliationResults.push(reconciliationResult);
 
-        // Create audit log
         await AuditLog.create({
           entityType: 'reconciliation_result',
           entityId: reconciliationResult._id,
@@ -229,7 +211,6 @@ class ReconciliationService {
     }
   }
 
-  // Manual resolution of reconciliation result
   async resolveManually(reconciliationId, resolution, userId) {
     const reconciliationResult = await ReconciliationResult.findById(reconciliationId);
     if (!reconciliationResult) {
@@ -242,7 +223,6 @@ class ReconciliationService {
       notes: reconciliationResult.notes
     };
 
-    // Update reconciliation result
     reconciliationResult.matchStatus = resolution.matchStatus;
     reconciliationResult.isManuallyResolved = true;
     reconciliationResult.resolvedBy = userId;
@@ -255,7 +235,6 @@ class ReconciliationService {
 
     await reconciliationResult.save();
 
-    // Create audit log
     await AuditLog.create({
       entityType: 'reconciliation_result',
       entityId: reconciliationResult._id,
@@ -274,7 +253,6 @@ class ReconciliationService {
     return reconciliationResult;
   }
 
-  // Get reconciliation statistics
   async getReconciliationStats(uploadJobId) {
     const stats = await ReconciliationResult.aggregate([
       { $match: { uploadJobId } },

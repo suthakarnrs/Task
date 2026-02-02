@@ -47,14 +47,13 @@ const recordSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound indexes for reconciliation performance
+
 recordSchema.index({ transactionId: 1, amount: 1 });
 recordSchema.index({ referenceNumber: 1 });
 recordSchema.index({ uploadJobId: 1 });
 recordSchema.index({ date: 1 });
 recordSchema.index({ isSystemRecord: 1 });
 
-// Prevent duplicate records from same upload
 recordSchema.index({ 
   transactionId: 1, 
   uploadJobId: 1 

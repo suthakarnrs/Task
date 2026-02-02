@@ -1,7 +1,6 @@
 const Queue = require('bull');
 const redis = require('redis');
 
-// Redis client setup
 const redisClient = redis.createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379'
 });
@@ -14,17 +13,14 @@ redisClient.on('connect', () => {
   console.log('Redis connected');
 });
 
-// Initialize Redis connection
 redisClient.connect().catch(console.error);
 
-// Create job queues
 const fileProcessingQueue = new Queue('file processing', process.env.REDIS_URL || 'redis://localhost:6379');
 const reconciliationQueue = new Queue('reconciliation', process.env.REDIS_URL || 'redis://localhost:6379');
 
-// Queue configuration
 const queueOptions = {
-  removeOnComplete: 10, // Keep last 10 completed jobs
-  removeOnFail: 50,     // Keep last 50 failed jobs
+  removeOnComplete: 10, 
+  removeOnFail: 50,     
   attempts: 3,
   backoff: {
     type: 'exponential',
@@ -32,20 +28,17 @@ const queueOptions = {
   }
 };
 
-// Add job to file processing queue
 const addFileProcessingJob = async (jobData) => {
   return fileProcessingQueue.add('process-file', jobData, {
     ...queueOptions,
-    delay: 1000 // 1 second delay to ensure database consistency
+    delay: 1000 
   });
 };
 
-// Add job to reconciliation queue
 const addReconciliationJob = async (jobData) => {
   return reconciliationQueue.add('reconcile-records', jobData, queueOptions);
 };
 
-// Get queue statistics
 const getQueueStats = async (queueName) => {
   const queue = queueName === 'file-processing' ? fileProcessingQueue : reconciliationQueue;
   
@@ -64,7 +57,6 @@ const getQueueStats = async (queueName) => {
   };
 };
 
-// Clean old jobs
 const cleanOldJobs = async () => {
   await fileProcessingQueue.clean(24 * 60 * 60 * 1000, 'completed'); // 24 hours
   await fileProcessingQueue.clean(7 * 24 * 60 * 60 * 1000, 'failed'); // 7 days
@@ -72,7 +64,6 @@ const cleanOldJobs = async () => {
   await reconciliationQueue.clean(7 * 24 * 60 * 60 * 1000, 'failed');
 };
 
-// Schedule cleanup every hour
 setInterval(cleanOldJobs, 60 * 60 * 1000);
 
 module.exports = {

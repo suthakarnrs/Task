@@ -45,18 +45,18 @@ const auditLogSchema = new mongoose.Schema({
 }, {
   timestamps: { 
     createdAt: true, 
-    updatedAt: false // Audit logs are immutable
+    updatedAt: false 
   }
 });
 
-// Indexes for performance and querying
+
 auditLogSchema.index({ entityType: 1, entityId: 1 });
 auditLogSchema.index({ userId: 1 });
 auditLogSchema.index({ action: 1 });
 auditLogSchema.index({ createdAt: -1 });
 auditLogSchema.index({ entityType: 1, createdAt: -1 });
 
-// Prevent updates to audit logs (immutable)
+
 auditLogSchema.pre('updateOne', function() {
   throw new Error('Audit logs are immutable and cannot be updated');
 });

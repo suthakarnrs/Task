@@ -7,7 +7,6 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Validation schema for dashboard filters
 const dashboardFilterSchema = Joi.object({
   dateFrom: Joi.date(),
   dateTo: Joi.date(),
@@ -15,7 +14,6 @@ const dashboardFilterSchema = Joi.object({
   status: Joi.string().valid('matched', 'partially_matched', 'not_matched', 'duplicate')
 });
 
-// Get dashboard summary
 router.get('/summary',
   authenticate,
   async (req, res) => {
@@ -27,7 +25,6 @@ router.get('/summary',
 
       const { dateFrom, dateTo, uploadedBy, status } = value;
 
-      // Build base query for role-based access
       let baseQuery = {};
       if (req.user.role === 'viewer') {
         baseQuery.uploadedBy = req.user._id;
@@ -35,14 +32,12 @@ router.get('/summary',
         baseQuery.uploadedBy = uploadedBy;
       }
 
-      // Date filter
       if (dateFrom || dateTo) {
         baseQuery.createdAt = {};
         if (dateFrom) baseQuery.createdAt.$gte = dateFrom;
         if (dateTo) baseQuery.createdAt.$lte = dateTo;
       }
 
-      // Get upload job statistics
       const uploadStats = await UploadJob.aggregate([
         { $match: baseQuery },
         {
@@ -56,7 +51,6 @@ router.get('/summary',
         }
       ]);
 
-      // Get reconciliation statistics
       let reconciliationQuery = {};
       if (req.user.role === 'viewer') {
         const userUploadJobs = await UploadJob.find({ uploadedBy: req.user._id }).select('_id');
@@ -86,7 +80,6 @@ router.get('/summary',
         }
       ]);
 
-      // Format upload statistics
       const uploadSummary = {
         processing: 0,
         completed: 0,
@@ -105,7 +98,6 @@ router.get('/summary',
         uploadSummary.errorRecords += stat.errorRecords;
       });
 
-      // Format reconciliation statistics
       const reconciliationSummary = {
         matched: 0,
         partially_matched: 0,
@@ -119,7 +111,6 @@ router.get('/summary',
         reconciliationSummary.total += stat.count;
       });
 
-      // Calculate accuracy percentage
       const accuracy = reconciliationSummary.total > 0 
         ? ((reconciliationSummary.matched + reconciliationSummary.partially_matched) / reconciliationSummary.total * 100).toFixed(2)
         : 0;
@@ -145,7 +136,6 @@ router.get('/summary',
   }
 );
 
-// Get reconciliation trends (for charts)
 router.get('/trends',
   authenticate,
   async (req, res) => {
@@ -157,11 +147,9 @@ router.get('/trends',
 
       const { dateFrom, dateTo, uploadedBy } = value;
 
-      // Default to last 30 days if no date range provided
       const endDate = dateTo || new Date();
       const startDate = dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-      // Build query for role-based access
       let uploadJobQuery = {};
       if (req.user.role === 'viewer') {
         uploadJobQuery.uploadedBy = req.user._id;
@@ -171,11 +159,9 @@ router.get('/trends',
 
       uploadJobQuery.createdAt = { $gte: startDate, $lte: endDate };
 
-      // Get upload jobs in date range
       const uploadJobs = await UploadJob.find(uploadJobQuery).select('_id');
       const uploadJobIds = uploadJobs.map(job => job._id);
 
-      // Get daily reconciliation trends
       const dailyTrends = await ReconciliationResult.aggregate([
         {
           $match: {
@@ -212,7 +198,6 @@ router.get('/trends',
         { $sort: { _id: 1 } }
       ]);
 
-      // Get accuracy trends
       const accuracyTrends = dailyTrends.map(day => {
         const statusCounts = {
           matched: 0,
@@ -237,7 +222,6 @@ router.get('/trends',
         };
       });
 
-      // Get upload volume trends
       const uploadTrends = await UploadJob.aggregate([
         { $match: uploadJobQuery },
         {
@@ -272,20 +256,17 @@ router.get('/trends',
   }
 );
 
-// Get recent activity
 router.get('/activity',
   authenticate,
   async (req, res) => {
     try {
       const { limit = 10 } = req.query;
 
-      // Build query for role-based access
       let uploadJobQuery = {};
       if (req.user.role === 'viewer') {
         uploadJobQuery.uploadedBy = req.user._id;
       }
 
-      // Get recent upload jobs
       const recentUploads = await UploadJob.find(uploadJobQuery)
         .populate('uploadedBy', 'username')
         .sort({ createdAt: -1 })
@@ -293,7 +274,6 @@ router.get('/activity',
         .select('jobId originalName status totalRecords processedRecords createdAt uploadedBy')
         .lean();
 
-      // Get recent reconciliation activities
       let reconciliationQuery = {};
       if (req.user.role === 'viewer') {
         const userUploadJobs = await UploadJob.find({ uploadedBy: req.user._id }).select('_id');
@@ -330,12 +310,10 @@ router.get('/activity',
   }
 );
 
-// Get system health metrics
 router.get('/health',
   authenticate,
   async (req, res) => {
     try {
-      // Get queue statistics (if available)
       let queueStats = null;
       try {
         const { getQueueStats } = require('../services/queueService');
@@ -352,7 +330,6 @@ router.get('/health',
         console.warn('Queue stats unavailable:', error.message);
       }
 
-      // Get database statistics
       const dbStats = {
         totalUploads: await UploadJob.countDocuments(),
         totalRecords: await Record.countDocuments(),
@@ -360,7 +337,6 @@ router.get('/health',
         processingJobs: await UploadJob.countDocuments({ status: 'processing' })
       };
 
-      // Get recent error rates
       const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const errorStats = await UploadJob.aggregate([
         {

@@ -12,13 +12,11 @@ class FileProcessor {
     this.maxRecords = parseInt(process.env.MAX_RECORDS) || 50000;
   }
 
-  // Generate file hash for duplicate detection
   generateFileHash(filePath) {
     const fileBuffer = fs.readFileSync(filePath);
     return crypto.createHash('sha256').update(fileBuffer).digest('hex');
   }
 
-  // Check if file was already processed
   async checkDuplicateFile(fileHash) {
     return await UploadJob.findOne({ 
       fileHash, 
@@ -26,7 +24,6 @@ class FileProcessor {
     });
   }
 
-  // Parse CSV file
   async parseCSV(filePath) {
     return new Promise((resolve, reject) => {
       const results = [];
@@ -48,7 +45,6 @@ class FileProcessor {
     });
   }
 
-  // Parse Excel file
   async parseExcel(filePath) {
     try {
       const workbook = XLSX.readFile(filePath);
@@ -64,7 +60,6 @@ class FileProcessor {
         throw new Error(`File exceeds maximum allowed records (${this.maxRecords})`);
       }
 
-      // Convert to object format with headers
       const headers = jsonData[0];
       const results = jsonData.slice(1).map((row, index) => {
         const obj = { rowNumber: index + 1 };
@@ -80,7 +75,6 @@ class FileProcessor {
     }
   }
 
-  // Validate required fields
   validateRecord(record, columnMapping, rowNumber) {
     const errors = [];
     const requiredFields = ['transactionId', 'amount', 'referenceNumber', 'date'];
@@ -96,7 +90,6 @@ class FileProcessor {
       }
     });
 
-    // Validate amount is numeric
     if (columnMapping.amount && record[columnMapping.amount]) {
       const amount = parseFloat(record[columnMapping.amount]);
       if (isNaN(amount)) {
@@ -108,7 +101,6 @@ class FileProcessor {
       }
     }
 
-    // Validate date format
     if (columnMapping.date && record[columnMapping.date]) {
       const date = new Date(record[columnMapping.date]);
       if (isNaN(date.getTime())) {
@@ -123,7 +115,6 @@ class FileProcessor {
     return errors;
   }
 
-  // Transform record according to column mapping
   transformRecord(record, columnMapping) {
     return {
       transactionId: record[columnMapping.transactionId]?.toString().trim(),
@@ -136,7 +127,6 @@ class FileProcessor {
     };
   }
 
-  // Process uploaded file
   async processFile(jobId) {
     const uploadJob = await UploadJob.findOne({ jobId });
     if (!uploadJob) {
@@ -150,12 +140,10 @@ class FileProcessor {
 
       const filePath = path.join(__dirname, '../uploads', uploadJob.filename);
       
-      // Check if file exists
       if (!fs.existsSync(filePath)) {
         throw new Error('Uploaded file not found');
       }
 
-      // Parse file based on extension
       let rawData;
       const fileExt = path.extname(uploadJob.originalName).toLowerCase();
       
@@ -201,13 +189,11 @@ class FileProcessor {
         }
       }
 
-      // Bulk insert valid records
       if (validRecords.length > 0) {
         try {
           await Record.insertMany(validRecords, { ordered: false });
           uploadJob.processedRecords = validRecords.length;
         } catch (error) {
-          // Handle duplicate key errors
           if (error.code === 11000) {
             const duplicateErrors = error.writeErrors || [];
             duplicateErrors.forEach(err => {
@@ -224,14 +210,12 @@ class FileProcessor {
         }
       }
 
-      // Update job status
       uploadJob.errors = errors;
       uploadJob.errorRecords = errors.length;
       uploadJob.status = 'completed';
       uploadJob.processingCompleted = new Date();
       await uploadJob.save();
 
-      // Create audit log
       await AuditLog.create({
         entityType: 'upload_job',
         entityId: uploadJob._id,
@@ -245,7 +229,6 @@ class FileProcessor {
         source: 'system'
       });
 
-      // Clean up uploaded file
       fs.unlinkSync(filePath);
 
       return {

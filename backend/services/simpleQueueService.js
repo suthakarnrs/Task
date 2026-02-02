@@ -1,4 +1,3 @@
-// Simplified in-memory queue service for development without Redis
 class SimpleQueue {
   constructor() {
     this.jobs = []
@@ -34,12 +33,10 @@ class SimpleQueue {
         const fileProcessor = require('./fileProcessor')
         const result = await fileProcessor.processFile(nextJob.data.jobId)
         
-        // If processing successful, trigger reconciliation
         if (result.success && result.processedRecords > 0) {
           const UploadJob = require('../models/UploadJob')
           const uploadJob = await UploadJob.findOne({ jobId: nextJob.data.jobId })
           if (uploadJob) {
-            // Add reconciliation job to queue
             await this.add('reconcile-records', {
               uploadJobId: uploadJob._id.toString(),
               userId: uploadJob.uploadedBy.toString()
@@ -65,7 +62,6 @@ class SimpleQueue {
     
     this.processing = false
     
-    // Process next job
     setTimeout(() => this.processNext(), 1000)
   }
 
@@ -81,7 +77,6 @@ class SimpleQueue {
 
 const simpleQueue = new SimpleQueue()
 
-// Export compatible interface
 module.exports = {
   addFileProcessingJob: (data) => simpleQueue.add('process-file', data),
   addReconciliationJob: (data) => simpleQueue.add('reconcile-records', data),

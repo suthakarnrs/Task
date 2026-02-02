@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline'
 
 export default function Upload() {
-  const [currentStep, setCurrentStep] = useState(1) // 1: Upload, 2: Preview, 3: Mapping
+  const [currentStep, setCurrentStep] = useState(1) 
   const [uploadedFile, setUploadedFile] = useState(null)
   const [jobId, setJobId] = useState(null)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -23,7 +23,6 @@ export default function Upload() {
   const queryClient = useQueryClient()
   const { register, handleSubmit, setValue, watch } = useForm()
 
-  // Check permissions
   if (!hasPermission(['admin', 'analyst'])) {
     return (
       <div className="text-center py-12">
@@ -36,7 +35,6 @@ export default function Upload() {
     )
   }
 
-  // File upload mutation
   const uploadMutation = useMutation(
     (formData) => uploadAPI.uploadFile(formData, (progressEvent) => {
       const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
@@ -54,14 +52,12 @@ export default function Upload() {
     }
   )
 
-  // Get file preview
   const { data: previewData, isLoading: previewLoading } = useQuery(
     ['file-preview', jobId],
     () => uploadAPI.getPreview(jobId),
     {
       enabled: !!jobId && currentStep === 2,
       onSuccess: (response) => {
-        // Auto-map columns if they match exactly
         const headers = response.data.headers
         const mapping = {}
         
@@ -82,7 +78,6 @@ export default function Upload() {
           }
         })
         
-        // Set form values
         Object.keys(mapping).forEach(key => {
           setValue(key, mapping[key])
         })
@@ -90,7 +85,6 @@ export default function Upload() {
     }
   )
 
-  // Submit column mapping
   const mappingMutation = useMutation(
     (mapping) => uploadAPI.submitMapping(jobId, mapping),
     {
@@ -105,7 +99,6 @@ export default function Upload() {
     }
   )
 
-  // Dropzone configuration
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
       'text/csv': ['.csv'],
@@ -113,7 +106,7 @@ export default function Upload() {
       'application/vnd.ms-excel': ['.xls']
     },
     maxFiles: 1,
-    maxSize: 50 * 1024 * 1024, // 50MB
+    maxSize: 50 * 1024 * 1024, 
     onDrop: (acceptedFiles) => {
       if (acceptedFiles.length > 0) {
         setUploadedFile(acceptedFiles[0])
@@ -150,7 +143,6 @@ export default function Upload() {
         </p>
       </div>
 
-      {/* Progress Steps */}
       <div className="mb-8">
         <nav aria-label="Progress">
           <ol className="flex items-center">
@@ -187,7 +179,6 @@ export default function Upload() {
         </nav>
       </div>
 
-      {/* Step 1: File Upload */}
       {currentStep === 1 && (
         <div className="card p-6">
           <div className="space-y-6">
@@ -264,7 +255,6 @@ export default function Upload() {
         </div>
       )}
 
-      {/* Step 2: Preview & Column Mapping */}
       {currentStep === 2 && (
         <div className="space-y-6">
           {previewLoading ? (
@@ -274,7 +264,6 @@ export default function Upload() {
             </div>
           ) : (
             <>
-              {/* File Preview */}
               <div className="card">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h3 className="text-lg font-medium text-gray-900">File Preview</h3>
@@ -308,7 +297,6 @@ export default function Upload() {
                 </div>
               </div>
 
-              {/* Column Mapping */}
               <div className="card p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Column Mapping</h3>
                 <p className="text-sm text-gray-600 mb-6">
@@ -374,7 +362,6 @@ export default function Upload() {
         </div>
       )}
 
-      {/* Step 3: Processing */}
       {currentStep === 3 && (
         <div className="card p-6 text-center">
           <CheckCircleIcon className="mx-auto h-12 w-12 text-green-600" />

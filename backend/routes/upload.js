@@ -11,13 +11,11 @@ const { authenticate, authorize, auditMiddleware } = require('../middleware/auth
 
 const router = express.Router();
 
-// Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Multer configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadsDir);
@@ -47,7 +45,6 @@ const upload = multer({
   }
 });
 
-// Validation schemas
 const columnMappingSchema = Joi.object({
   transactionId: Joi.string().required(),
   amount: Joi.string().required(),
@@ -57,7 +54,6 @@ const columnMappingSchema = Joi.object({
   category: Joi.string().allow('')
 });
 
-// Upload file endpoint
 router.post('/file', 
   authenticate, 
   authorize('admin', 'analyst'),
@@ -69,13 +65,10 @@ router.post('/file',
         return res.status(400).json({ message: 'No file uploaded' });
       }
 
-      // Generate file hash for duplicate detection
       const fileHash = fileProcessor.generateFileHash(req.file.path);
       
-      // Check for duplicate file
       const existingJob = await fileProcessor.checkDuplicateFile(fileHash);
       if (existingJob) {
-        // Remove uploaded file
         fs.unlinkSync(req.file.path);
         
         return res.status(409).json({
@@ -85,7 +78,6 @@ router.post('/file',
         });
       }
 
-      // Create upload job
       const jobId = uuidv4();
       const uploadJob = new UploadJob({
         jobId,
@@ -108,7 +100,6 @@ router.post('/file',
       });
 
     } catch (error) {
-      // Clean up uploaded file on error
       if (req.file && fs.existsSync(req.file.path)) {
         fs.unlinkSync(req.file.path);
       }
@@ -119,7 +110,6 @@ router.post('/file',
   }
 );
 
-// Get file preview
 router.get('/preview/:jobId', 
   authenticate,
   async (req, res) => {
@@ -131,7 +121,6 @@ router.get('/preview/:jobId',
         return res.status(404).json({ message: 'Upload job not found' });
       }
 
-      // Check authorization
       if (req.user.role === 'viewer' && uploadJob.uploadedBy.toString() !== req.user._id.toString()) {
         return res.status(403).json({ message: 'Access denied' });
       }
@@ -142,7 +131,6 @@ router.get('/preview/:jobId',
         return res.status(404).json({ message: 'File not found' });
       }
 
-      // Parse first 20 rows for preview
       let previewData;
       const fileExt = path.extname(uploadJob.originalName).toLowerCase();
       
@@ -152,7 +140,6 @@ router.get('/preview/:jobId',
         previewData = await fileProcessor.parseExcel(filePath);
       }
 
-      // Return first 20 rows
       const preview = previewData.slice(0, 20);
       const headers = preview.length > 0 ? Object.keys(preview[0]).filter(key => key !== 'rowNumber') : [];
 
@@ -170,7 +157,6 @@ router.get('/preview/:jobId',
   }
 );
 
-// Submit column mapping and start processing
 router.post('/mapping/:jobId',
   authenticate,
   authorize('admin', 'analyst'),
@@ -189,16 +175,13 @@ router.post('/mapping/:jobId',
         return res.status(404).json({ message: 'Upload job not found' });
       }
 
-      // Check authorization
       if (uploadJob.uploadedBy.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Access denied' });
       }
 
-      // Update column mapping
       uploadJob.columnMapping = value;
       await uploadJob.save();
 
-      // Add to processing queue
       await addFileProcessingJob({ jobId });
 
       res.json({
@@ -214,7 +197,6 @@ router.post('/mapping/:jobId',
   }
 );
 
-// Get upload job status
 router.get('/status/:jobId',
   authenticate,
   async (req, res) => {
@@ -228,7 +210,6 @@ router.get('/status/:jobId',
         return res.status(404).json({ message: 'Upload job not found' });
       }
 
-      // Check authorization
       if (req.user.role === 'viewer' && uploadJob.uploadedBy._id.toString() !== req.user._id.toString()) {
         return res.status(403).json({ message: 'Access denied' });
       }
@@ -242,7 +223,6 @@ router.get('/status/:jobId',
   }
 );
 
-// Get user's upload jobs
 router.get('/jobs',
   authenticate,
   async (req, res) => {
@@ -252,7 +232,6 @@ router.get('/jobs',
 
       let query = {};
       
-      // Role-based filtering
       if (req.user.role === 'viewer') {
         query.uploadedBy = req.user._id;
       }
